@@ -852,6 +852,7 @@ def build_audio():
     vrms = np.sqrt(np.mean(v[np.abs(v).mean(1) > 0.01] ** 2))
     # музыка: −20 dB под голосом, при речи — приглушение
     mus = synth_music(TOTAL)
+    mus = np.pad(mus, ((0, max(0, n - len(mus))), (0, 0)))[:n]
     mrms = np.sqrt(np.mean(mus ** 2))
     mus *= (vrms * 10 ** (-20 / 20)) / mrms
     env = np.abs(v).mean(1)
