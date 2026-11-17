@@ -1,6 +1,6 @@
 import '@fontsource/montserrat/800.css';
 import '@fontsource/montserrat/900.css';
-import {AbsoluteFill, OffthreadVideo, Img, staticFile, useCurrentFrame, useVideoConfig,
+import {Freeze, AbsoluteFill, OffthreadVideo, Img, staticFile, useCurrentFrame, useVideoConfig,
   interpolate, spring, Easing, Sequence} from 'remotion';
 import data from './data.json';
 
@@ -9,6 +9,8 @@ const C = {cream: '#FFF8EF', teal: '#1E6B60', tealDark: '#123F39', gold: '#F2B54
 const FONT = 'Montserrat, sans-serif';
 const emoji = (code, size) => <Img src={staticFile(`emoji/${code}.svg`)} style={{width: size, height: size}} />;
 const f = (sec) => Math.round(sec * FPS);
+export const AD_END = 29.1;   // «жасаймын» сөзінен кейін
+export const END_CARD = 2.8;  // CTA кадрының ұзақтығы
 
 // ---------- ZOOM (кесінді сайын масштаб; бет нүктесіне бағытталған) ----------
 // [start, end, scaleFrom, scaleTo, punchAt?, punchScale?]
@@ -47,12 +49,12 @@ const zoomAt = (t) => {
 // ---------- СУБТИТР ----------
 const pages = (() => {
   const out = []; let cur = [];
-  data.words.forEach((w, i) => {
+  data.words.filter((w) => w.s < AD_END).forEach((w, i, arr) => {
     cur.push(w);
     const len = cur.map((x) => x.w).join(' ').length;
-    const next = data.words[i + 1];
+    const next = arr[i + 1];
     const gap = next ? next.s - w.e : 9;
-    if (/[.!?,»]$/.test(w.w) || cur.length >= 3 || len > 16 || gap > 0.35) { out.push(cur); cur = []; }
+    if (/[.!?,»]$/.test(w.w) || cur.length >= 3 || len > 13 || gap > 0.35) { out.push(cur); cur = []; }
   });
   if (cur.length) out.push(cur);
   return out.map((p, i) => ({words: p, s: p[0].s, e: out[i + 1] ? out[i + 1][0].s : data.duration}));
@@ -109,8 +111,8 @@ const Card = ({children, dur, top = 230, style = {}}) => {
   );
 };
 
-const NameCard = ({dur}) => (
-  <Card dur={dur} top={210}>
+const NameCard = ({dur, top = 210}) => (
+  <Card dur={dur} top={top}>
     <div style={{display: 'flex', alignItems: 'center', gap: 26}}>
       {emoji('1f486-200d-2640-fe0f', 110)}
       <div>
@@ -263,44 +265,101 @@ const CTA = ({dur}) => {
   );
 };
 
-// card list: [component, start, end, props]
+
+// ---------- ТАРГЕТ: қызыл хук ----------
+const Hook = ({dur, hook, sub}) => {
+  const {inK, outK, frame} = useInOut(dur);
+  const shake = frame < 12 ? Math.sin(frame * 2.2) * (12 - frame) * 0.6 : 0;
+  return (
+    <AbsoluteFill style={{alignItems: 'center', top: 150}}>
+      <div style={{background: '#E3262B', color: '#fff', fontFamily: FONT, fontWeight: 900, fontSize: 74, lineHeight: 1.05,
+        padding: '22px 40px', borderRadius: 26, textAlign: 'center', maxWidth: 940, textTransform: 'uppercase',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.45)', transform: `scale(${0.5 + 0.5 * inK}) translateX(${shake}px)`,
+        opacity: outK}}>{hook}</div>
+      {sub && <div style={{marginTop: 14, background: '#fff', color: '#E3262B', fontFamily: FONT, fontWeight: 900,
+        fontSize: 44, padding: '10px 26px', borderRadius: 18, opacity: outK * Math.min(1, Math.max(0, (frame - 8) / 6))}}>{sub}</div>}
+    </AbsoluteFill>
+  );
+};
+
+// ---------- Нәтиже скриндері ----------
+const Results = ({dur}) => {
+  const {outK, frame} = useInOut(dur);
+  const shot = (src, delay, rot, y, x) => {
+    const k = spring({frame: frame - delay, fps: FPS, config: {damping: 14, stiffness: 160}});
+    return (
+      <Img src={staticFile(src)} style={{position: 'absolute', left: x, top: y, width: 720, borderRadius: 34,
+        border: '5px solid rgba(255,255,255,0.9)', boxShadow: '0 30px 70px rgba(0,0,0,0.55)',
+        transform: `translateX(${(1 - k) * 1100}px) rotate(${rot * k}deg) scale(${1 + Math.max(0, 1 - k) * 0.1})`,
+        opacity: outK}} />
+    );
+  };
+  const tagK = spring({frame: frame - 4, fps: FPS, config: {damping: 12}});
+  return (
+    <AbsoluteFill>
+      {shot('res_sep.jpg', 0, -3, 180, 50)}
+      {shot('res_oct.jpg', 18, 3, 430, 310)}
+      <div style={{position: 'absolute', left: 70, top: 120, background: '#E3262B', color: '#fff', fontFamily: FONT,
+        fontWeight: 900, fontSize: 48, padding: '10px 26px', borderRadius: 18, display: 'flex', gap: 12, alignItems: 'center',
+        transform: `scale(${tagK}) rotate(-4deg)`, opacity: outK}}>{emoji('1f4c8', 50)} НӘТИЖЕ</div>
+    </AbsoluteFill>
+  );
+};
+
+// ---------- Соңғы CTA кадры ----------
+const AdCTA = ({dur, cta}) => {
+  const {inK, frame} = useInOut(dur + 100);
+  const pulse = 1 + Math.sin(frame / 4) * 0.035;
+  const bounce = Math.abs(Math.sin(frame / 6)) * 24;
+  return (
+    <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', background: `rgba(10,30,27,${0.55 * inK})`}}>
+      <div style={{fontFamily: FONT, fontWeight: 900, fontSize: 60, color: '#fff', textAlign: 'center', marginBottom: 30,
+        opacity: inK, textShadow: '0 6px 20px rgba(0,0,0,0.6)'}}>{emoji('1f486-200d-2640-fe0f', 80)}<br/>АЛИЯ · массажист</div>
+      <div style={{background: '#E3262B', borderRadius: 40, padding: '34px 56px', fontFamily: FONT, color: '#fff',
+        textAlign: 'center', boxShadow: '0 24px 60px rgba(0,0,0,0.5)', transform: `scale(${inK * pulse})`}}>
+        <div style={{fontWeight: 900, fontSize: 76, lineHeight: 1.05}}>{cta}</div>
+        <div style={{fontWeight: 800, fontSize: 42, marginTop: 12, color: '#FFE3A3'}}>төмендегі батырманы басыңыз</div>
+      </div>
+      <div style={{marginTop: 24, transform: `translateY(${bounce}px) scale(${inK})`}}>{emoji('1f447', 110)}</div>
+    </AbsoluteFill>
+  );
+};
+
+// [component, start, end, props, sfx]
 export const CARDS = [
-  [NameCard, 0.9, 4.0, {}, 'pop'],
-  [YearsCard, 4.03, 6.6, {}, 'pop2'],
-  [ArtCard, 7.9, 10.02, {strikeAt: f(8.555 - 7.9)}, 'pop'],
+  [NameCard, 1.4, 4.0, {top: 470}, 'pop'],
+  [YearsCard, 4.03, 5.3, {}, 'pop2'],
+  [Results, 5.3, 8.2, {}, 'whoosh'],
+  [ArtCard, 8.2, 10.02, {strikeAt: f(8.555 - 8.2)}, 'pop'],
   [Bubble, 10.9, 12.9, {}, 'pop'],
   [EnergyCard, 18.56, 19.85, {}, 'pop2'],
-  [ServicesCard, 19.92, 29.0, {}, 'whoosh'],
-  [WelcomeCard, 29.14, 30.5, {}, 'pop'],
-  [Chips, 30.85, 34.3, {}, 'pop'],
-  [CTA, 34.39, 99, {}, 'ding'],
+  [ServicesCard, 19.92, AD_END, {}, 'whoosh'],
 ];
 
-export const Reel = () => {
+export const Reel = ({hook, sub, cta}) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
-  const t = frame / FPS;
+  const t = Math.min(frame / FPS, AD_END);
   const z = zoomAt(t);
-  // кесінді ауысқанда жеңіл «flash»
   const lastCut = [0, ...data.cuts].filter((c) => c <= t).pop();
   const flash = interpolate(t - lastCut, [0, 0.12], [0.18, 0], {extrapolateRight: 'clamp'});
+  const video = <OffthreadVideo src={staticFile('cut.mp4')} muted />;
   return (
     <AbsoluteFill style={{background: '#000'}}>
-      <AbsoluteFill style={{transform: `scale(${z})`, transformOrigin: '55.5% 47%'}}>
-        <OffthreadVideo src={staticFile('cut.mp4')} muted />
+      <AbsoluteFill style={{transform: `scale(${z})`, transformOrigin: '55.5% 47%',
+        filter: frame >= f(AD_END) ? 'blur(8px)' : 'none'}}>
+        {frame >= f(AD_END) ? <Freeze frame={f(AD_END) - 2}>{video}</Freeze> : video}
       </AbsoluteFill>
-      {/* төменгі жағын сәл қараңғылау — субтитр оқылуы үшін */}
       <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.35) 80%, rgba(0,0,0,0.15) 100%)'}} />
-      <AbsoluteFill style={{background: '#fff', opacity: lastCut > 0 ? flash : 0}} />
-      {CARDS.map(([Comp, s, e, props], i) => {
-        const end = Math.min(f(e), durationInFrames);
-        return (
-          <Sequence key={i} from={f(s)} durationInFrames={end - f(s)}>
-            <Comp dur={end - f(s)} {...props} />
-          </Sequence>
-        );
-      })}
-      <Captions />
+      <AbsoluteFill style={{background: '#fff', opacity: lastCut > 0 && frame < f(AD_END) ? flash : 0}} />
+      <Sequence from={0} durationInFrames={f(4.0)}><Hook dur={f(4.0)} hook={hook} sub={sub} /></Sequence>
+      {CARDS.map(([Comp, s, e, props], i) => (
+        <Sequence key={i} from={f(s)} durationInFrames={f(e) - f(s)}>
+          <Comp dur={f(e) - f(s)} {...props} />
+        </Sequence>
+      ))}
+      {frame < f(AD_END) && <Captions />}
+      <Sequence from={f(AD_END)}><AdCTA dur={durationInFrames - f(AD_END)} cta={cta} /></Sequence>
     </AbsoluteFill>
   );
 };
