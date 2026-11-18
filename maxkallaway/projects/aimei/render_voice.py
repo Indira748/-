@@ -90,11 +90,12 @@ SCENES = [  # (басы, соңы, фото, zoom_from, zoom_to, фокус_y)
     (0.0, T(4.42), 'p2_product_close', 1.12, 1.00, 0.55),
     (T(4.42), T(9.88), 'p1_product_wide', 1.00, 1.10, 0.62),
     (T(9.88), T(13.04), 'p2_product_close', 1.00, 1.06, 0.50),     # бренд (карточкада)
-    (T(13.04), T(21.04), 'p2_product_close', 1.10, 1.22, 0.62),
+    (T(13.04), T(21.04), 'd1_pulse', 1.00, 1.04, 0.0),              # дәрігер тамыр ұстайды
     (T(21.04), T(30.54), 'p1_product_wide', 1.05, 1.18, 0.66),
     (T(30.54), T(36.00), 'p2_product_close', 1.00, 1.10, 0.48),
-    (T(36.00), T(40.52), 'p1_product_wide', 1.16, 1.02, 0.60),
-    (T(40.52), DUR, 'p3_sign', 1.00, 1.10, 0.45),
+    (T(36.00), T(40.52), 'vid', 1.0, 1.0, 0.0),                     # видео: шөп іріктеу
+    (T(40.52), T(43.50), 'd2_pulse', 1.00, 1.06, 0.0),
+    (T(43.50), DUR, 'p3_sign', 1.00, 1.10, 0.45),
 ]
 R.SCENES = SCENES
 HOOK = ('ХИМИЯ', 'ТАБИҒИ ЕМ', 'pill', 'herb', T(4.30))
@@ -106,7 +107,7 @@ STEPS_END = T(30.50)
 # (пайда болу, мәтін, эмодзи, фон, түс, бұрыш, cx, cy, жоғалу)
 PILLS = [
     (T(4.42), 'Уақытша жеңілдік', 'hourglass', WHITE, BLACK, -5, 540, 1080, T(6.0)),
-    (T(17.10), 'Жеке диагноз', 'stetho', LIME, BLACK, 4, 560, 1090, T(21.0)),
+    (T(17.10), 'Жеке диагноз', 'stetho', LIME, BLACK, 4, 600, 1570, T(21.0)),
     (T(25.10), 'Қабынуды басады', 'shield', WHITE, BLACK, -5, 450, 1000, T(30.5)),
     (T(28.66), 'Зат алмасу', 'cycle', LIME, BLACK, 4, 640, 1130, T(30.5)),
     (T(36.00), 'Химиямен уламаңыз', 'noentry', WHITE, BLACK, -5, 520, 1000, T(40.5)),
@@ -326,9 +327,21 @@ def draw_subs(c, t):
     place(c, plate, W // 2, SUB_Y, scale=0.85 + 0.15 * clamp(k, 0, 1.1), alpha=clamp(k))
 
 
+VID_DIR = os.path.join(SRC, 'vidframes')
+
+
+def bg_frame(t):
+    for a, b, name, *_ in SCENES:
+        if a <= t < b and name == 'vid':
+            files = sorted(os.listdir(VID_DIR))
+            i = min(len(files) - 1, int((t - a) * FPS))
+            return Image.open(os.path.join(VID_DIR, files[i])).convert('RGBA')
+    return R.bg_frame(t)
+
+
 def frame(n):
     t = n / FPS
-    bg = R.bg_frame(t)
+    bg = bg_frame(t)
     c = brand_screen(bg, t)
     draw_hook(c, t); draw_keyword(c, t); draw_steps(c, t)
     draw_pills(c, t); draw_list(c, t); draw_cta(c, t); draw_subs(c, t)
