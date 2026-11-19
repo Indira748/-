@@ -81,8 +81,8 @@ HOOK_T = (T(1.96), T(3.24))
 WHAT_WORDS = ws(5.0, 15.75)
 WHAT_KEYS = {'белсенді', 'нүктелерге', 'жіңішке', 'стерильді', 'инелер', 'қалпына'}
 LIST_T0 = T(15.78)
-ITEMS = [('Бел мен мойын ауыруы', T(19.60)), ('Буын ауыруы', T(21.38)), ('Бас ауыруы, мигрень', T(22.76)),
-         ('Ұйқысыздық пен стресс', T(24.46)), ('Невралгия, бет нервісі', T(26.18)), ('Ас қорыту бұзылыстары', T(28.94))]
+ITEMS = [('Бел мен мойын ауыруы', T(19.60)), ('Буын ауыруы', T(21.38)), ('Бас ауыруы мен мигрень', T(22.76)),
+         ('Ұйқысыздық пен стресс', T(24.46)), ('Невралгия және бет нервісінің қабынуы', T(26.18)), ('Ас қорыту бұзылыстары', T(28.94))]
 NOTE_T = T(35.3)
 WHY = [('Неге Ai Mei?', T(38.66)), ('Тәжірибелі қытай дәрігерлері', T(40.46)), ('Тамыр арқылы диагностика', T(43.96)),
        ('Иглотерапия және шөп емі', T(46.28))]
@@ -109,20 +109,57 @@ def photo_full(name, t, z=1.0):
 
 
 # әр пункт үшін: (кадр функциясы, қиып алу аймағы x0,y0,x1,y1 — 1080x1920 кадрда)
+# әр ауруға иллюстрация-карточка: (негізгі 3D бейне, қосымша, фон түсі)
+ILLU = {
+    1: ('massage', 'herb', (214, 236, 214)),       # бел мен мойын
+    2: ('bone', 'sparkles', (226, 236, 220)),      # буын
+    3: ('bandage', 'zap', (232, 238, 218)),        # бас ауыруы, мигрень
+    4: ('sleeping', 'moon', (218, 230, 236)),      # ұйқысыздық, стресс
+    5: ('brain', 'zap', (230, 226, 238)),          # невралгия, бет нервісі
+    6: ('bowl', 'herb', (238, 234, 216)),          # ас қорыту
+}
+
+
+@lru_cache(None)
+def illu_bg(col):
+    g = np.zeros((600, 960, 3), np.float32)
+    yy, xx = np.mgrid[0:600, 0:960]
+    r = np.sqrt(((xx - 380) / 520) ** 2 + ((yy - 300) / 420) ** 2)
+    k = np.clip(r, 0, 1)[..., None]
+    g[:] = np.array(col) * (1 - k) + np.array(CREAM) * k
+    im = Image.fromarray(g.astype(np.uint8), 'RGB').convert('RGBA')
+    deco = needles_deco(260, 260, LEAF)
+    deco.putalpha(deco.split()[3].point(lambda v: int(v * 0.5)))
+    im.alpha_composite(deco, (680, 320))
+    return im
+
+
+def illu(k, t):
+    main, sub, col = ILLU[k]
+    im = illu_bg(col).copy()
+    fl = math.sin(t * 2.2) * 10                                        # жұмсақ «қалқу»
+    sc = 0.94 + 0.06 * ease_out(t / 0.6)
+    e = RA.emoji(main, int(330 * sc))
+    halo = Image.new('RGBA', (460, 460), (0, 0, 0, 0))
+    ImageDraw.Draw(halo).ellipse((20, 20, 440, 440), fill=(255, 255, 255, 150))
+    im.alpha_composite(halo, (380 - 230, 300 - 230))
+    im.alpha_composite(shadowed(e, 10, 16, 0.18), (int(380 - e.width / 2 - 26), int(300 - e.height / 2 - 26 + fl)))
+    a = 2 * math.pi * (t * 0.18) + k
+    e2 = RA.emoji(sub, 140)
+    im.alpha_composite(e2, (int(640 + 40 * math.cos(a) - 70), int(150 + 30 * math.sin(a) - 70 - fl * 0.6)))
+    return im
+
+
 MEDIA = [
     (lambda t: photo_full('p3_sign', t), (40, 30, 740, 467)),           # кіріспе — логотип
-    (lambda t: needle(t), (0, 700, 1080, 1375)),                        # 1 бел/мойын — ине қою
-    (lambda t: needle(t + 2.4), (0, 820, 1080, 1495)),                  # 2 буын — тізе
-    (lambda t: photo_full('d1_pulse', t), (0, 470, 1080, 1145)),        # 3 бас ауыруы — дәрігер
-    (lambda t: photo_full('d2_pulse', t), (0, 900, 1080, 1575)),        # 4 ұйқысыздық — тамыр ұстау
-    (lambda t: herbs(t), (0, 260, 1080, 935)),                          # 5 невралгия — дәрігер
-    (lambda t: needle(t + 1.2), (0, 600, 1080, 1275)),                  # 6 ас қорыту — ине
+    None, None, None, None, None, None,                                 # 1–6: иллюстрациялар (ILLU)
     (lambda t: photo_full('d1_pulse', t), (0, 380, 1080, 1055)),        # ескерту — дәрігер кеңесі
 ]
 CARD_W, CARD_H = 960, 600
 
 
 def media_card(k, t):
+    if MEDIA[k] is None: return illu(k, t)
     fn, (x0, y0, x1, y1) = MEDIA[k]
     z = 1.0 + 0.06 * smooth(t / 3.0)                                    # баяу zoom
     cx, cy, w, h = (x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / z, (y1 - y0) / z
@@ -227,7 +264,9 @@ def sc_list(lt, dur, t):
         fg = tuple(int(INK[j] + (WHITE[j] - INK[j]) * act) for j in range(3))
         put(c, rrect(920, 100, 50, bg, 255), W / 2, y - 58, a)
         put(c, num_badge(i + 1, 62), 104, y + 19, a, 'l')
-        put(c, txt(item, F_INTER, 42, fg), 192, y + 27, a, 'l')
+        fs = 42
+        while font(F_INTER, fs).getlength(item) > 780: fs -= 2
+        put(c, txt(item, F_INTER, fs, fg), 192, y + 27 + (42 - fs) // 2, a, 'l')
     a, dy = rise(t, NOTE_T - 0.1, 0.6)
     put(c, pill('Ем дәрігердің тексеруінен кейін жеке тағайындалады', 31, GREEN, WHITE, 'stetho'), W / 2, 1688 + dy, a)
     return c
