@@ -26,13 +26,8 @@ F_XB = A('Montserrat-ExtraBold.ttf')
 
 ADDRESS = '6а-11/3'
 PHONE = '+7 (778) 665-88-88'
-SCENES = [  # (басы, соңы) — кадрлар арасында 0.5 с жұмсақ ауысу
-    ('intro', 0.0, 4.6),
-    ('what', 4.6, 10.4),
-    ('list', 10.4, 20.6),
-    ('why', 20.6, 26.6),
-    ('cta', 26.6, 34.0),
-]
+import vo_acu
+SCENES, TL, CLIPS = vo_acu.timeline()   # көріністер уақыты ер адам дауысына (TTS) қарай
 DUR = SCENES[-1][2]
 XF = 0.5
 ITEMS = ['Бел мен мойын ауыруы', 'Буын ауыруы', 'Бас ауыруы, мигрень',
@@ -214,14 +209,17 @@ def needle_files(): return sorted(os.listdir(NEEDLE))
 
 def sc_what(lt, dur):
     f = needle_files()                                        # видео: дәрігер тізеге ине қояды
-    i = min(len(f) - 1, int(lt * (len(f) / FPS) / dur * FPS))  # сахна ұзақтығына баяу созылады
-    c = Image.open(os.path.join(NEEDLE, f[i])).convert('RGBA')
+    vlen = len(f) / FPS / 0.85                                # 0.85x — сәл баяу
+    c = Image.open(os.path.join(NEEDLE, f[min(len(f) - 1, int(lt * 0.85 * FPS))])).convert('RGBA')
+    if lt > vlen - 0.6:                                       # сосын дәрігер фотосы (тамыр ұстау)
+        k = smooth((lt - (vlen - 0.6)) / 0.6)
+        c = Image.blend(c, kb('d1_pulse', lt - vlen + 0.6, dur - vlen, 1.0, 1.05, 0.0), k)
     a, dy = rise(lt, 0.35, 0.7)
     put(c, rrect(960, 370, 48, CREAM, 240), W / 2, 1452 - 58 + 58 + dy - 58, a)
     a2, dy2 = rise(lt, 0.6)
     put(c, leaf_icon(50), 120, 1488 + dy2, a2, 'l')
     put(c, txt('Иглотерапия деген не?', F_B, 52, GREEN), 186, 1482 + dy2, a2, 'l')
-    a3, dy3 = rise(lt, 1.0)
+    a3, dy3 = rise(lt, TL['what']['w1'] + 0.3)
     body = 'Белсенді нүктелерге өте жіңішке стерильді инелер қойылады — бұл ағзаның өзін-өзі қалпына келтіруіне көмектеседі.'
     put(c, txt(body, F_INTER, 39, INK, 820, 1.4, 'l'), 120, 1572 + dy3, a3, 'l')
     return c
@@ -232,33 +230,33 @@ def sc_list(lt, dur):
     put(c, needles_deco(360, 360), W - 330, 40, 0.45 * ease_out(lt / 1.0), 'l')
     a, dy = rise(lt, 0.15)
     put(c, txt('КӨРСЕТКІШТЕР', F_B, 34, LEAF), 90, 190 + dy, a, 'l')
-    a, dy = rise(lt, 0.35)
+    a, dy = rise(lt, TL['list']['l0'] - 0.25)
     put(c, txt('Қандай жағдайда көмектеседі?', F_XB, 74, GREEN, 820, 1.15, 'l'), 90, 245 + dy, a, 'l')
     y0, step = 520, 142
     for i, item in enumerate(ITEMS):
-        a, dy = rise(lt, 0.9 + i * 0.55, 0.55)
+        a, dy = rise(lt, TL['list'][f'l{i + 1}'] - 0.12, 0.55)
         row = rrect(900, 116, 58, WHITE, 255)
         put(c, row, W / 2, y0 + i * step + dy - 58, a)
         put(c, num_badge(i + 1, 68), 112, y0 + i * step + 24 + dy, a, 'l')
         put(c, txt(item, F_INTER, 44, INK), 205, y0 + i * step + 36 + dy, a, 'l')
-    a, dy = rise(lt, 4.6, 0.8)
+    a, dy = rise(lt, TL['list']['l7'] - 0.6, 0.8)
     strip = kb('d2_pulse', lt, dur, 1.0, 1.0, 0.62).crop((60, 980, 1020, 1440))   # тек қолдар — тамыр ұстау
     strip.putalpha(card_mask(960, 460, 44))
     put(c, shadowed(strip, 10, 20, 0.18), W / 2, 1322 + dy, a)
-    a, _ = rise(lt, 5.2)
+    a, _ = rise(lt, TL['list']['l7'])
     put(c, txt('* Ем дәрігердің тексеруінен кейін жеке тағайындалады', F_INTER, 30, MUTED), W / 2, 1862, a)
     return c
 
 
 def sc_why(lt, dur):
-    c = vid(lt)                                               # дәрігер шөп іріктейді (беті жоғарыда)
+    c = vid(lt * min(1.0, len(vid_files()) / FPS / dur))     # видео сахна ұзақтығына сай баяулайды                                               # дәрігер шөп іріктейді (беті жоғарыда)
     c.alpha_composite(vgrad(CREAM, 1050, 1300, 0.0))
     a, dy = rise(lt, 0.35, 0.7)
     put(c, rrect(960, 450, 48, CREAM, 245), W / 2, 1245 + dy, a)
-    a, dy = rise(lt, 0.6)
+    a, dy = rise(lt, TL['why']['y0'] - 0.1)
     put(c, txt('Неге Ai Mei?', F_B, 58, GREEN), 120, 1362 + dy, a, 'l')
     for i, w in enumerate(WHY):
-        a, dy = rise(lt, 1.1 + i * 0.5)
+        a, dy = rise(lt, TL['why'][f'y{i + 1}'] - 0.12)
         y = 1470 + i * 92
         put(c, leaf_icon(46), 122, y + 4 + dy, a, 'l')
         put(c, txt(w, F_INTER, 44, INK), 190, y + dy, a, 'l')
@@ -271,18 +269,18 @@ def sc_cta(lt, dur):
     put(c, needles_deco(300, 300, (52, 118, 80)), W - 280, 60, ease_out(lt / 1.2), 'l')
     a, dy = rise(lt, 0.2, 0.8)
     put(c, logo_circle(300), W / 2, 330 + dy, a)
-    a, dy = rise(lt, 0.7)
+    a, dy = rise(lt, TL['cta']['c1'] - 0.1)
     put(c, txt('Ai Mei орталығына келіп емделіңіз', F_XB, 84, WHITE, 900, 1.18), W / 2, 760 + dy, a)
     k = ease_out((lt - 1.2) / 0.8)
     if k > 0:
         ImageDraw.Draw(c).rounded_rectangle((W / 2 - 70 * k, 1110, W / 2 + 70 * k, 1116), radius=3, fill=LEAF)
-    a, dy = rise(lt, 1.4)
+    a, dy = rise(lt, TL['cta']['c2'] - 0.9)
     put(c, pill(f'Мекенжай: {ADDRESS}', 48, WHITE, GREEN, 'pin'), W / 2, 1180 + dy, a)
-    a, dy = rise(lt, 1.8)
+    a, dy = rise(lt, TL['cta']['c2'] - 0.1)
     put(c, pill(PHONE, 48, WHITE, GREEN, 'phone'), W / 2, 1310 + dy, a)
-    a, dy = rise(lt, 2.2)
+    a, dy = rise(lt, TL['cta']['c3'] - 0.1)
     put(c, txt('Алдын ала қабылдауға жазылыңыз', F_INTER, 42, MINT), W / 2, 1480 + dy, a)
-    a, dy = rise(lt, 2.4)
+    a, dy = rise(lt, TL['cta']['c3'] + 0.6)
     put(c, txt('AI MEI', F_XB, 56, LEAF), W / 2 - 70, 1720 + dy, a)
     put(c, txt('爱美', F_CJK, 56, LEAF), W / 2 + 110, 1720 + dy, a)
     return c
@@ -336,7 +334,17 @@ def make_audio(path):
         s = int(d * SR); mus[s:] += mus[:-s] * g
     mus /= np.abs(mus).max(); mus *= 10 ** (-9 / 20)
     f = int(2.0 * SR); mus[-f:] *= np.linspace(1, 0, f); mus[:int(0.6 * SR)] *= np.linspace(0, 1, int(0.6 * SR))
-    st = (np.stack([mus, np.roll(mus, int(0.012 * SR))], 1) * 32767).astype(np.int16)
+    voice = vo_acu.voice_track(CLIPS, DUR, SR).astype(np.float64)
+    voice *= 10 ** (-2 / 20) / max(1e-6, np.abs(voice).max())
+    win = int(0.05 * SR)
+    env = np.sqrt(np.convolve(voice ** 2, np.ones(win) / win, 'same'))
+    sp = (env > 0.02).astype(np.float64)
+    sm = int(0.35 * SR); sp = np.minimum(1, np.convolve(sp, np.ones(sm) / sm * 3, 'same'))
+    vr = np.sqrt(np.mean(voice[np.abs(voice) > 0.02] ** 2))
+    mus = mus / max(1e-6, np.sqrt(np.mean(mus ** 2))) * vr * 10 ** ((-20 * sp - 11 * (1 - sp)) / 20)
+    L = mus + voice
+    Rr = np.roll(mus, int(0.012 * SR)) + voice
+    st = (np.clip(np.stack([L, Rr], 1), -1, 1) * 32767).astype(np.int16)
     with wave.open(path, 'wb') as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(st.tobytes())
 

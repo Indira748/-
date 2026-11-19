@@ -5,3 +5,4 @@ projects/*/out/
 projects/*/test/
 projects/*/src/
 __pycache__/
+projects/*/assets/tts/
