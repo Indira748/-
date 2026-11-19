@@ -224,6 +224,18 @@ def what_layout():
     return lines + [cur]
 
 
+BACK = os.path.join(HERE, 'src', 'backframes')
+
+
+@lru_cache(None)
+def back_files(): return sorted(os.listdir(BACK))
+
+
+def back_frame(t):
+    f = back_files()
+    return Image.open(os.path.join(BACK, f[min(len(f) - 1, max(0, int(t * FPS)))])).convert('RGBA')
+
+
 def sc_what(lt, dur, t):
     f = needle_files()
     vstart = SCENES[0][2] - SCENES[0][1]
@@ -231,7 +243,7 @@ def sc_what(lt, dur, t):
     c = Image.open(os.path.join(NEEDLE, f[min(len(f) - 1, int((lt + vstart) * FPS))])).convert('RGBA')
     if lt > vl - 0.5:
         k = smooth((lt - (vl - 0.5)) / 0.5)
-        c = Image.blend(c, kb('d1_pulse', lt - vl + 0.5, dur - vl, 1.0, 1.05, 0.0), k)
+        c = Image.blend(c, back_frame(lt - vl + 0.5), k)               # арқаға ине қою видеосы
     a, dy = rise(lt, 0.25, 0.6)
     put(c, rrect(960, 400, 48, CREAM, 242), W / 2, 1365 + dy, a)
     put(c, leaf_icon(48), 120, 1452 + dy, a, 'l')
