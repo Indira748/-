@@ -204,18 +204,25 @@ def sc_intro(lt, dur):
     return c
 
 
+NEEDLE = os.path.join(HERE, 'src', 'needleframes')
+
+
+@lru_cache(None)
+def needle_files(): return sorted(os.listdir(NEEDLE))
+
+
 def sc_what(lt, dur):
-    c = kb('d1_pulse', lt, dur, 1.00, 1.06, 0.0)             # дәрігердің беті жоғарыда — мәтін төменде
+    f = needle_files()                                        # видео: дәрігер тізеге ине қояды
+    i = min(len(f) - 1, int(lt * (len(f) / FPS) / dur * FPS))  # сахна ұзақтығына баяу созылады
+    c = Image.open(os.path.join(NEEDLE, f[i])).convert('RGBA')
     a, dy = rise(lt, 0.35, 0.7)
-    card = rrect(960, 520, 48, CREAM, 245)
-    put(c, card, W / 2, 1242 + dy, a)
+    put(c, rrect(960, 370, 48, CREAM, 240), W / 2, 1452 - 58 + 58 + dy - 58, a)
     a2, dy2 = rise(lt, 0.6)
-    put(c, leaf_icon(54), 120, 1378 + dy2, a2, 'l')
-    put(c, txt('Иглотерапия деген не?', F_B, 56, GREEN), 190, 1372 + dy2, a2, 'l')
+    put(c, leaf_icon(50), 120, 1488 + dy2, a2, 'l')
+    put(c, txt('Иглотерапия деген не?', F_B, 52, GREEN), 186, 1482 + dy2, a2, 'l')
     a3, dy3 = rise(lt, 1.0)
-    body = ('Денедегі белсенді нүктелерге өте жіңішке стерильді инелер қойылады. '
-            'Бұл қан айналымын жақсартып, ағзаның өзін-өзі қалпына келтіруіне көмектеседі.')
-    put(c, txt(body, F_INTER, 41, INK, 800, 1.42, 'l'), 120, 1470 + dy3, a3, 'l')
+    body = 'Белсенді нүктелерге өте жіңішке стерильді инелер қойылады — бұл ағзаның өзін-өзі қалпына келтіруіне көмектеседі.'
+    put(c, txt(body, F_INTER, 39, INK, 820, 1.4, 'l'), 120, 1572 + dy3, a3, 'l')
     return c
 
 
