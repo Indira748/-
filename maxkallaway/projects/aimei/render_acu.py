@@ -306,7 +306,7 @@ def frame(n):
 SR = 44100
 
 
-def make_audio(path):
+def make_audio(path, music_only=False):
     N = int(DUR * SR); mus = np.zeros(N); rng = np.random.default_rng(11)
     def add(sig, t):
         i = int(t * SR); j = min(N, i + len(sig))
@@ -334,6 +334,11 @@ def make_audio(path):
         s = int(d * SR); mus[s:] += mus[:-s] * g
     mus /= np.abs(mus).max(); mus *= 10 ** (-9 / 20)
     f = int(2.0 * SR); mus[-f:] *= np.linspace(1, 0, f); mus[:int(0.6 * SR)] *= np.linspace(0, 1, int(0.6 * SR))
+    if music_only:                       # тек музыка (render_acu2 өз дауысын қосады)
+        st = (np.stack([mus, mus], 1) * 32767).astype(np.int16)
+        with wave.open(path, 'wb') as w:
+            w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(st.tobytes())
+        return
     voice = vo_acu.voice_track(CLIPS, DUR, SR).astype(np.float64)
     voice *= 10 ** (-2 / 20) / max(1e-6, np.abs(voice).max())
     win = int(0.05 * SR)

@@ -303,9 +303,8 @@ def make_audio(path):
     voice = np.concatenate(parts); voice = np.pad(voice, (0, max(0, N - len(voice))))[:N]
     voice *= 10 ** (-1.5 / 20) / max(1e-6, np.abs(voice).max())
     # музыка — render_acu-дағы тыныш эмбиент
-    RA.DUR = DUR; RA.SCENES = []; RA.CLIPS = []
-    RA.vo_acu.voice_track = lambda clips, dur, sr: np.zeros(int(dur * sr))
-    tmp = os.path.join(OUT, '_m.wav'); RA.make_audio(tmp)
+    RA.DUR = DUR; RA.SCENES = []
+    tmp = os.path.join(OUT, '_m.wav'); RA.make_audio(tmp, music_only=True)
     with wave.open(tmp) as w:
         mus = np.frombuffer(w.readframes(w.getnframes()), np.int16)[::2].astype(np.float64) / 32767
     os.remove(tmp)
