@@ -25,6 +25,7 @@ F_B = A('Montserrat-Bold.ttf')
 F_XB = A('Montserrat-ExtraBold.ttf')
 
 ADDRESS = '6а-11/3'
+PHONE = '+7 (778) 665-88-88'
 SCENES = [  # (басы, соңы) — кадрлар арасында 0.5 с жұмсақ ауысу
     ('intro', 0.0, 4.6),
     ('what', 4.6, 10.4),
@@ -277,11 +278,13 @@ def sc_cta(lt, dur):
         ImageDraw.Draw(c).rounded_rectangle((W / 2 - 70 * k, 1110, W / 2 + 70 * k, 1116), radius=3, fill=LEAF)
     a, dy = rise(lt, 1.4)
     put(c, pill(f'Мекенжай: {ADDRESS}', 48, WHITE, GREEN, 'pin'), W / 2, 1180 + dy, a)
-    a, dy = rise(lt, 1.9)
-    put(c, txt('Алдын ала қабылдауға жазылыңыз', F_INTER, 42, MINT), W / 2, 1350 + dy, a)
+    a, dy = rise(lt, 1.8)
+    put(c, pill(PHONE, 48, WHITE, GREEN, 'phone'), W / 2, 1310 + dy, a)
+    a, dy = rise(lt, 2.2)
+    put(c, txt('Алдын ала қабылдауға жазылыңыз', F_INTER, 42, MINT), W / 2, 1480 + dy, a)
     a, dy = rise(lt, 2.4)
-    put(c, txt('AI MEI', F_XB, 56, LEAF), W / 2 - 70, 1700 + dy, a)
-    put(c, txt('爱美', F_CJK, 56, LEAF), W / 2 + 110, 1700 + dy, a)
+    put(c, txt('AI MEI', F_XB, 56, LEAF), W / 2 - 70, 1720 + dy, a)
+    put(c, txt('爱美', F_CJK, 56, LEAF), W / 2 + 110, 1720 + dy, a)
     return c
 
 
