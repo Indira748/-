@@ -153,7 +153,7 @@ def illu(k, t):
 MEDIA = [
     (lambda t: photo_full('p3_sign', t), (0, 110, 1080, 785)),          # кіріспе — логотип + «Ai Mei» жазуы
     None, None, None, None, None, None,                                 # 1–6: иллюстрациялар (ILLU)
-    (lambda t: photo_full('d1_pulse', t), (0, 380, 1080, 1055)),        # ескерту — дәрігер кеңесі
+    (lambda t: photo_full('d3_pulse_hands', t), (0, 660, 1080, 1335)),  # ескерту — тамыр арқылы тексеру
 ]
 CARD_W, CARD_H = 960, 600
 
@@ -281,7 +281,7 @@ def sc_list(lt, dur, t):
     card.putalpha(card_mask(CARD_W, CARD_H, 44))
     a, dy = rise(lt, 0.25, 0.6)
     put(c, shadowed(card, 10, 22, 0.18), W / 2, 270 + dy, a)
-    if cur >= 0:
+    if cur >= 0 and mk <= 6:
         k = ease_out((t - ITEMS[cur][1] + 0.1) / 0.35)
         put(c, pill(f'{cur + 1} / {len(ITEMS)}', 36, GREEN, WHITE), 120, 360 - 10 * (1 - k), k, 'l')
     y0, step = 975, 116
