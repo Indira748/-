@@ -151,17 +151,36 @@ def illu(k, t):
 
 
 MEDIA = [
-    (lambda t: photo_full('p3_sign', t), (40, 30, 740, 467)),           # кіріспе — логотип
+    (lambda t: photo_full('p3_sign', t), (0, 110, 1080, 785)),          # кіріспе — логотип + «Ai Mei» жазуы
     None, None, None, None, None, None,                                 # 1–6: иллюстрациялар (ILLU)
     (lambda t: photo_full('d1_pulse', t), (0, 380, 1080, 1055)),        # ескерту — дәрігер кеңесі
 ]
 CARD_W, CARD_H = 960, 600
 
 
+@lru_cache(None)
+def sign_card():
+    """вывеска: логотип + «Ai Mei» толық көрінеді (биіктігі бойынша сыйғызылып, фонда бұлыңғыр көшірме)"""
+    from PIL import ImageFilter
+    src = Image.open(os.path.join(HERE, 'assets', 'photos', 'p3b_sign.jpg')).convert('RGB')
+    sw, sh = src.size
+    reg = src.crop((0, 0, sw, int(sh * 0.44)))                       # логотип + Ai Mei
+    bg = reg.resize((CARD_W, int(CARD_W * reg.height / reg.width))).crop((0, 0, CARD_W, CARD_H))
+    bg = bg.filter(ImageFilter.GaussianBlur(28)).convert('RGBA')
+    bg.alpha_composite(Image.new('RGBA', bg.size, CREAM + (90,)))
+    fg = reg.resize((int(CARD_H * reg.width / reg.height), CARD_H), Image.LANCZOS).convert('RGBA')
+    bg.alpha_composite(fg, ((CARD_W - fg.width) // 2, 0))
+    return bg
+
+
 def media_card(k, t):
+    if k == 0:
+        im = sign_card(); z = 1.0 + 0.04 * smooth(t / 3.0)
+        w, h = CARD_W / z, CARD_H / z
+        return im.resize((CARD_W, CARD_H), Image.BILINEAR, box=((CARD_W - w) / 2, (CARD_H - h) / 2, (CARD_W + w) / 2, (CARD_H + h) / 2))
     if MEDIA[k] is None: return illu(k, t)
     fn, (x0, y0, x1, y1) = MEDIA[k]
-    z = 1.0 + 0.06 * smooth(t / 3.0)                                    # баяу zoom
+    z = 1.0 + (0.0 if k == 0 else 0.06) * smooth(t / 3.0)                # баяу zoom (вывескада жоқ — жазу кесілмесін)
     cx, cy, w, h = (x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / z, (y1 - y0) / z
     im = fn(t).resize((CARD_W, CARD_H), Image.BILINEAR, box=(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2))
     return im.convert('RGBA')
