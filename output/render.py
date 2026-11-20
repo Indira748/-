@@ -6,11 +6,11 @@ D = '/tmp/claude-0/-home-user--/4d24e793-9976-53cc-a9d4-de1c07ee49ef/scratchpad/
 A = D + 'assets/'
 W, H, FPS = 720, 1280, 25
 OFF = 2.70          # trim leading silence of the voiceover
-VO_END = 66.30      # cut voiceover here (speech ends ~65.0)
+VO_END = 67.40      # speech ends ~65.0, hold CTA to the end
 DUR = VO_END - OFF
 PREVIEW = len(sys.argv) > 1 and sys.argv[1] == 'preview'
 
-BG = Image.open(A + 'bg.png').convert('RGBA')
+BG = Image.open(A + 'bg2.png').convert('RGBA')
 
 def font(size):
     f = ImageFont.truetype(A + 'Nunito.ttf', size)
@@ -80,8 +80,8 @@ def img_sprite(path, width=None, border=0):
         bg.alpha_composite(im, (border, border)); im = with_shadow(bg, off=10, blur=12, alpha=0.3)
     return im
 
-AG = Image.open(A + 'agila.png').convert('RGBA')
-IG = img_sprite(A + 'igprofile.png', width=440, border=10)
+AG = Image.open(A + 'user.png').convert('RGBA')
+IG = img_sprite(A + 'profile_card.png', width=600, border=10)
 
 # ---------------- element constructors ----------------
 def T(t, txt, y, c='b', size=56, x=0, end=None):
@@ -248,9 +248,9 @@ S = [
     T(63.16, 'ДИРЕКТКЕ', 180, size=78),
     T(63.94, '«ТАРГЕТ»', 275, c='g', size=82),
     T(64.42, 'деп жазыңыз', 360, x=50, size=60),
-    IGCARD(63.30, 360, 760),
-    CIRCLE(64.60, (338, 868, 558, 924)),
-    E(64.75, "backhand_index_pointing_down", 450, 815, 110),
+    IGCARD(63.30, 360, 720),
+    CIRCLE(64.60, (70, 575, 226, 731)),
+    E(64.75, "backhand_index_pointing_down", 150, 520, 110),
  ]),
 ]
 
@@ -313,7 +313,7 @@ def draw_el(frame, e, t):
     elif k == 'agila':
         p = min(1, dt / 0.4); q = ease_out(p)
         sc = 0.92 + 0.08 * q
-        paste_center(frame, AG, 40 + AG.width / 2, 60 + AG.height / 2 + (1 - q) * 30, scale=sc, alpha=q)
+        paste_center(frame, AG, 360, 490 + (1 - q) * 30, scale=sc, alpha=q)
     elif k == 'ig':
         p = min(1, dt / 0.4)
         paste_center(frame, IG, e['x'], e['y'], scale=max(0.01, ease_back(p, 1.3)), alpha=min(1, p * 2))
